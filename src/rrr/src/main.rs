@@ -3,7 +3,7 @@ use kvm::ioctl::{common::Kvm, misc::VALID_API_VERSION};
 use std::process::exit;
 
 fn main() {
-  let kvm = match Kvm::new() {
+  let mut kvm = match Kvm::new() {
     Ok(kvm) => kvm,
     Err(e) => {
       eprintln!("{e}");
@@ -20,6 +20,11 @@ fn main() {
   };
   if api_version != VALID_API_VERSION {
     eprintln!("Invalid KVM API version returned: ${api_version}");
+    exit(1);
+  }
+
+  if let Err(e) = kvm.init_vm() {
+    eprintln!("{e}");
     exit(1);
   }
 

@@ -1,7 +1,10 @@
 pub mod common;
 pub mod misc;
+pub mod vm;
 
 use thiserror::Error;
+
+use crate::binding::commands::KvmCommands;
 
 /*** KVM ioctl error definition ***/
 
@@ -9,41 +12,14 @@ use thiserror::Error;
 pub enum IoctlError {
   #[error("failed to open KVM device file.")]
   KvmOpenFailed(#[from] errno::Errno),
-  #[error("ioctl returned error.")]
-  IoctlResultError { errno: errno::Errno },
+  #[error("ioctl({:?}) returned error: {:?}", ioctl_cmd, errno)]
+  IoctlResultError {
+    errno: errno::Errno,
+    ioctl_cmd: KvmCommands,
+  },
 }
 
-/*** KVM ioctl commands definition ***/
-
-const _IOC_NRSHIFT: u32 = 0;
-const _IOC_NRBITS: u32 = 8;
-const _IOC_TYPESHIFT: u32 = _IOC_NRSHIFT + _IOC_NRBITS;
-const _IOC_TYPEBITS: u32 = 8;
-const _IOC_SIZESHIFT: u32 = _IOC_TYPESHIFT + _IOC_TYPEBITS;
-const _IOC_SIZEBITS: u32 = 14;
-const _IOC_DIRSHIFT: u32 = _IOC_SIZESHIFT + _IOC_SIZEBITS;
-const _IOC_NONE: u32 = 0;
-const KVMIO: u32 = 0xAE;
-
-macro_rules! _IOC {
-  ( $dir: expr, $typ: expr, $nr: expr, $size:expr ) => {
-    (($dir << $crate::ioctl::_IOC_DIRSHIFT)
-      | (($typ) << $crate::ioctl::_IOC_TYPESHIFT)
-      | (($nr) << $crate::ioctl::_IOC_NRSHIFT)
-      | (($size) << $crate::ioctl::_IOC_SIZESHIFT)) as u64
-  };
-}
-macro_rules! _IO {
-  ($typ: expr, $nr: expr) => {
-    _IOC!($crate::ioctl::_IOC_NONE, $typ, $nr, 0)
-  };
-}
-macro_rules! _KVMIO {
-  ($nr: expr) => {
-    _IO!($crate::ioctl::KVMIO, $nr)
-  };
-}
-
-pub mod commands {
-  pub const KVM_GET_API_VERSION: u64 = _KVMIO!(0);
+pub mod layout {
+  // TSS region must be within first 4GB, and consumes 3 pages.
+  pub const KVM_TSS_ADDR: u64 = (n_gib_bytes!(4) - n_kib_bytes!(4) * 3) as u64;
 }
