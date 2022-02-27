@@ -1,0 +1,5 @@
+[workspace]
+members = ["src/kvm", "src/rrr"]
+default-member = ["src/rrr"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
